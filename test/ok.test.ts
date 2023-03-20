@@ -1,28 +1,28 @@
 import { assert } from 'conditional-type-checks';
-import { Err, Ok, Result } from '../src';
+import { Err, Ok, OkImpl, Result } from '../src';
 import { eq, expect_never, expect_string } from './util';
 
 test('Constructable & Callable', () => {
     const a = new Ok(3);
-    expect(a).toBeInstanceOf(Ok);
+    expect(a).toBeInstanceOf(OkImpl);
     eq<typeof a, Ok<number>>(true);
 
-    const b = Ok(3);
-    expect(b).toBeInstanceOf(Ok);
+    const b = Result.Ok(3);
+    expect(b).toBeInstanceOf(OkImpl);
     eq<typeof b, Ok<number>>(true);
 
     function mapper<T>(fn: (val: string) => T): T {
         return fn('hi');
     }
 
-    const mapped = mapper(Ok);
+    const mapped = mapper(Result.Ok);
     expect(mapped).toMatchResult(new Ok('hi'));
 
     // TODO: This should work!
     // eq<typeof mapped, Ok<string>>(true);
 
     // @ts-expect-error Ok<string> is not assignable to Ok<number>
-    mapper<Ok<number>>(Ok);
+    mapper<Ok<number>>(Result.Ok);
 });
 
 test('ok, err, and val', () => {
@@ -38,71 +38,74 @@ test('ok, err, and val', () => {
 });
 
 test('static EMPTY', () => {
-    expect(Ok.EMPTY).toBeInstanceOf(Ok);
+    expect(Ok.EMPTY).toBeInstanceOf(OkImpl);
     expect(Ok.EMPTY.val).toBe(undefined);
     eq<typeof Ok.EMPTY, Ok<void>>(true);
 });
 
-test('else, unwrapOr', () => {
-    const e1 = Ok(3).else(false);
-    expect(e1).toBe(3);
-    eq<number, typeof e1>(true);
-
-    const e2 = Ok(3).unwrapOr(false);
+test('unwrapOr', () => {
+    const e2 = Result.Ok(3).unwrapOr(false);
     expect(e2).toBe(3);
     eq<number, typeof e2>(true);
 });
 
 test('expect', () => {
-    const val = Ok(true).expect('should not fail!');
+    const val = Result.Ok(true).expect('should not fail!');
     expect(val).toBe(true);
     eq<boolean, typeof val>(true);
 });
 
+test('expectErr', () => {
+    expect(() => {
+        const err = Result.Ok(true).expectErr('should fail!');
+        expect_never(err, true);
+    }).toThrowError('should fail!');
+});
+
 test('unwrap', () => {
-    const val = Ok(true).unwrap();
+    const val = Result.Ok(true).unwrap();
     expect(val).toBe(true);
     eq<boolean, typeof val>(true);
 });
 
 test('map', () => {
-    const mapped = Ok(3).map((x) => x.toString(10));
-    expect(mapped).toMatchResult(Ok('3'));
+    const mapped = Result.Ok(3).map((x) => x.toString(10));
+    expect(mapped).toMatchResult(Result.Ok('3'));
     eq<typeof mapped, Ok<string>>(true);
 });
 
 test('andThen', () => {
     const ok = new Ok('Ok').andThen(() => new Ok(3));
-    expect(ok).toMatchResult(Ok(3));
+    expect(ok).toMatchResult(Result.Ok(3));
     eq<typeof ok, Ok<number>>(true);
 
     const err = new Ok('Ok').andThen(() => new Err(false));
-    expect(err).toMatchResult(Err(false));
+    expect(err).toMatchResult(Result.Err(false));
     eq<typeof err, Result<string, boolean>>(true);
 });
 
 test('mapErr', () => {
-    const ok = Ok('32').mapErr((x: any) => +x);
-    expect(ok).toMatchResult(Ok('32'));
+    const ok = Result.Ok('32').mapErr((x: any) => +x);
+    expect(ok).toMatchResult(Result.Ok('32'));
     eq<typeof ok, Ok<string>>(true);
 });
 
 test('iterable', () => {
     let i = 0;
-    for (const char of Ok('hello')) {
+    for (const char of Result.Ok('hello')) {
         expect('hello'[i]).toBe(char);
         expect_string(char, true);
         i++;
     }
 
     i = 0;
-    for (const item of Ok([1, 2, 3])) {
+    for (const item of Result.Ok([1, 2, 3])) {
         expect([1, 2, 3][i]).toBe(item);
         eq<number, typeof item>(true);
         i++;
     }
 
-    for (const item of Ok(1)) {
+    for (const item of Result.Ok(1)) {
         expect_never(item, true);
 
         throw new Error('Unreachable, Err@@iterator should emit no value and return');
@@ -110,6 +113,6 @@ test('iterable', () => {
 });
 
 test('to string', () => {
-    expect(`${Ok(1)}`).toEqual('Ok(1)');
-    expect(`${Ok({ name: 'George' })}`).toEqual('Ok({"name":"George"})');
+    expect(`${Result.Ok(1)}`).toEqual('Ok(1)');
+    expect(`${Result.Ok({ name: 'George' })}`).toEqual('Ok({"name":"George"})');
 });

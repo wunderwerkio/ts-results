@@ -1,27 +1,27 @@
 import { assert } from 'conditional-type-checks';
-import { Err, Ok } from '../src';
+import { Err, ErrImpl, Ok, Result } from '../src';
 import { eq, expect_never } from './util';
 
 test('Constructable & Callable', () => {
     const a = new Err(3);
-    expect(a).toBeInstanceOf(Err);
+    expect(a).toBeInstanceOf(ErrImpl);
     eq<typeof a, Err<number>>(true);
 
-    const b = Err(3);
-    expect(b).toBeInstanceOf(Err);
+    const b = Result.Err(3);
+    expect(b).toBeInstanceOf(ErrImpl);
     eq<typeof b, Err<number>>(true);
 
     function mapper<T>(fn: (val: string) => T): T {
         return fn('hi');
     }
-    const mapped = mapper(Err);
+    const mapped = mapper(Result.Err);
     expect(mapped).toMatchResult(new Err('hi'));
 
     // TODO: This should work!
-    // eq<typeof mapped, Err<string>>(true);
+    eq<typeof mapped, Err<string>>(true);
 
     // @ts-expect-error Err<string> is not assignable to Err<number>
-    mapper<Err<number>>(Err);
+    mapper<Err<number>>(Result.Err);
 });
 
 test('ok, err, and val', () => {
@@ -37,63 +37,64 @@ test('ok, err, and val', () => {
 });
 
 test('static EMPTY', () => {
-    expect(Err.EMPTY).toBeInstanceOf(Err);
+    expect(Err.EMPTY).toBeInstanceOf(ErrImpl);
     expect(Err.EMPTY.val).toBe(undefined);
     eq<typeof Err.EMPTY, Err<void>>(true);
 });
 
-test('else, unwrapOr', () => {
-    const e1 = Err(3).else(false);
-    expect(e1).toBe(false);
-    eq<false, typeof e1>(true);
-
-    const e2 = Err(3).unwrapOr(false);
+test('unwrapOr', () => {
+    const e2 = Result.Err(3).unwrapOr(false);
     expect(e2).toBe(false);
     eq<false, typeof e2>(true);
 });
 
 test('expect', () => {
     expect(() => {
-        const err = Err(true).expect('should fail!');
+        const err = Result.Err(true).expect('should fail!');
         expect_never(err, true);
     }).toThrowError('should fail!');
 });
 
+test('expectErr', () => {
+    const err = Result.Err({ message: 'error' }).expectErr('');
+    expect(err).toMatchObject({ message: 'error' });
+});
+
 test('unwrap', () => {
     expect(() => {
-        const err = Err({ message: 'bad error' }).unwrap();
+        const err = Result.Err({ message: 'bad error' }).unwrap();
         expect_never(err, true);
     }).toThrowError('{"message":"bad error"}');
 });
 
 test('map', () => {
-    const err = Err(3).map((x: any) => Symbol());
-    expect(err).toMatchResult(Err(3));
+    const err = Result.Err(3).map((x: any) => Symbol());
+    expect(err).toMatchResult(Result.Err(3));
     eq<typeof err, Err<number>>(true);
 });
 
 test('andThen', () => {
     const err = new Err('Err').andThen(() => new Ok(3));
-    expect(err).toMatchResult(Err('Err'));
+    expect(err).toMatchResult(Result.Err('Err'));
     eq<typeof err, Err<string>>(true);
 });
 
 test('mapErr', () => {
-    const err = Err('32').mapErr((x) => +x);
-    expect(err).toMatchResult(Err(32));
+    const err = Result.Err('32').mapErr((x) => +x);
+    expect(err).toMatchResult(Result.Err(32));
     eq<typeof err, Err<number>>(true);
 });
 
 test('iterable', () => {
-    for (const item of Err([123])) {
+    for (const item of Result.Err([123])) {
         expect_never(item, true);
         throw new Error('Unreachable, Err@@iterator should emit no value and return');
     }
 });
 
 test('to string', () => {
-    expect(`${Err(1)}`).toEqual('Err(1)');
-    expect(`${Err({ name: 'George' })}`).toEqual('Err({"name":"George"})');
+    expect(`${Result.Err(1)}`).toEqual('Err(1)');
+    expect(`${Result.Err({ name: 'George' })}`).toEqual('Err({"name":"George"})');
 });
 
 test('stack trace', () => {
@@ -102,7 +103,7 @@ test('stack trace', () => {
     }
 
     function second(): Err<number> {
-        return Err(1);
+        return Result.Err(1);
     }
 
     const err = first();
@@ -112,6 +113,6 @@ test('stack trace', () => {
     expect(err.stack).toMatch(/Err\(1\)/);
     expect(err.stack).not.toMatch(/ErrImpl/);
 
-    const err2 = Err(new Error('inner error'));
+    const err2 = Result.Err(new Error('inner error'));
     expect(err2.stack).toMatch(/Err\(Error: inner error\)/);
 });

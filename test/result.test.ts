@@ -8,23 +8,22 @@ import {
     ResultErrTypes,
     ResultOkType,
     ResultOkTypes,
-    Some,
 } from '../src';
 import { eq } from './util';
 
 test('Err<E> | Ok<T> should be Result<T, E>', () => {
-    const r1 = Err(0);
+    const r1 = Result.Err(0);
     const r2 = new Ok('');
     const r = Math.random() ? r1 : r2;
 
     expect(Result.isResult(r1)).toEqual(true);
     expect(Result.isResult(r2)).toEqual(true);
-    expect(Result.isResult(Some(3))).toEqual(false);
+    expect(Result.isResult(Option.Some(3))).toEqual(false);
     eq<typeof r, Result<string, number>>(true);
 });
 
 test('Type can be narrowed using ok & err', () => {
-    const r1 = Ok(0) as Result<number, string>;
+    const r1 = Result.Ok(0) as Result<number, string>;
     if (r1.ok) {
         eq<Ok<number>, typeof r1>(true);
     } else {
@@ -99,30 +98,30 @@ test('ResultOkTypes & ResultErrTypes', () => {
 });
 
 test('Result.all', () => {
-    const ok0 = Ok(3);
+    const ok0 = Result.Ok(3);
     const ok1 = new Ok(true);
     const ok2 = new Ok(8 as const) as Result<8, boolean>;
-    const err0 = Err(Symbol());
+    const err0 = Result.Err(Symbol());
     const err1 = new Err(Error());
     const err2 = new Err(9 as const) as Result<boolean, 9>;
 
     const all0 = Result.all();
-    expect(all0).toMatchResult(Ok([]));
+    expect(all0).toMatchResult(Result.Ok([]));
     eq<typeof all0, Result<[], never>>(true);
 
     const all1 = Result.all(ok0, ok1);
-    expect(all1).toMatchResult(Ok([3, true]));
+    expect(all1).toMatchResult(Result.Ok([3, true]));
     eq<typeof all1, Result<[number, boolean], never>>(true);
 
     const all3 = Result.all(err0, err1);
-    expect(all3).toMatchResult(Err(err0.val));
+    expect(all3).toMatchResult(Result.Err(err0.val));
     eq<typeof all3, Result<[never, never], symbol | Error>>(true);
 
     const all4 = Result.all(...([] as Result<string, number>[]));
     eq<typeof all4, Result<string[], number>>(true);
 
     const all5 = Result.all(ok0, ok1, ok2, err2);
-    expect(all5).toMatchResult(Err(9));
+    expect(all5).toMatchResult(Result.Err(9));
     eq<typeof all5, Result<[number, boolean, 8, boolean], boolean | 9>>(true);
 });
 
@@ -135,28 +134,28 @@ test('Result.any', () => {
     const err2 = new Err(9 as const) as Result<boolean, 9>;
 
     const any0 = Result.any();
-    expect(any0).toMatchResult(Err([]));
+    expect(any0).toMatchResult(Result.Err([]));
     eq<typeof any0, Result<never, []>>(true);
 
     const any1 = Result.any(ok0, ok1);
-    expect(any1).toMatchResult(Ok(3));
+    expect(any1).toMatchResult(Result.Ok(3));
     eq<typeof any1, Result<number | boolean, [never, never]>>(true);
 
     const any3 = Result.any(err0, err1);
-    expect(any3).toMatchResult(Err([err0.val, err1.val]));
+    expect(any3).toMatchResult(Result.Err([err0.val, err1.val]));
     eq<typeof any3, Result<never, [symbol, Error]>>(true);
 
     const any4 = Result.any(...([] as Result<string, number>[]));
     eq<typeof any4, Result<string, number[]>>(true);
 
     const any5 = Result.any(err0, err1, err2, ok2);
-    expect(any5).toMatchResult(Ok(8));
+    expect(any5).toMatchResult(Result.Ok(8));
     eq<typeof any5, Result<boolean | 8, [symbol, Error, 9, boolean]>>(true);
 });
 
 test('Result.wrap', () => {
     const a = Result.wrap(() => 1);
-    expect(a).toMatchResult(Ok(1));
+    expect(a).toMatchResult(Result.Ok(1));
     eq<typeof a, Result<number, unknown>>(true);
 
     class CustomError {
@@ -167,13 +166,13 @@ test('Result.wrap', () => {
     const b = Result.wrap<number, CustomError>(() => {
         throw err;
     });
-    expect(b).toMatchResult(Err(err));
+    expect(b).toMatchResult(Result.Err(err));
     eq<typeof b, Result<number, CustomError>>(true);
 });
 
 test('Result.wrapAsync', async () => {
     const a = await Result.wrapAsync(async () => 1);
-    expect(a).toMatchResult(Ok(1));
+    expect(a).toMatchResult(Result.Ok(1));
     eq<typeof a, Result<number, unknown>>(true);
 
     class CustomError {
@@ -184,7 +183,7 @@ test('Result.wrapAsync', async () => {
     const b = await Result.wrapAsync<number, CustomError>(async () => {
         throw err;
     });
-    expect(b).toMatchResult(Err(err));
+    expect(b).toMatchResult(Result.Err(err));
     eq<typeof b, Result<number, CustomError>>(true);
 
     const c = await Result.wrapAsync<number, string>(() => {
@@ -192,7 +191,7 @@ test('Result.wrapAsync', async () => {
         return Promise.resolve(3);
     });
 
-    expect(c).toMatchResult(Err('thrown before promise'));
+    expect(c).toMatchResult(Result.Err('thrown before promise'));
     eq<typeof c, Result<number, string>>(true);
 });
 
@@ -225,14 +224,14 @@ test('safeUnwrap', () => {
 test('Issue #24', () => {
     const getStatus = (payload: boolean): Result<boolean, Error> => {
         if (payload) {
-            return Ok(payload);
+            return Result.Ok(payload);
         }
-        return Err(new Error('Payload is false'));
+        return Result.Err(new Error('Payload is false'));
     };
 
     const processStatus = (): Result<boolean, Error> => {
         return getStatus(true)
-            .andThen((result) => Ok(result))
+            .andThen((result) => Result.Ok(result))
             .map((data) => data);
     };
 });
@@ -241,7 +240,7 @@ test('To option', () => {
     const result = new Ok('hello') as Result<string, number>;
     const option = result.toOption();
     eq<typeof option, Option<string>>(true);
-    expect(option).toEqual(Some('hello'));
+    expect(option).toEqual(Option.Some('hello'));
 
     const result2: Result<string, number> = new Err(32);
     const option2 = result2.toOption();

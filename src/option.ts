@@ -83,7 +83,7 @@ class NoneImpl implements BaseOption<never> {
     }
 
     toResult<E>(error: E): Err<E> {
-        return Err(error);
+        return new Err(error);
     }
 
     toString(): string {
@@ -99,7 +99,7 @@ Object.freeze(None);
 /**
  * Contains the success value
  */
-class SomeImpl<T> implements BaseOption<T> {
+export class SomeImpl<T> implements BaseOption<T> {
     static readonly EMPTY = new SomeImpl<void>(undefined);
 
     readonly some!: true;
@@ -115,17 +115,13 @@ class SomeImpl<T> implements BaseOption<T> {
         return Symbol.iterator in obj
             ? obj[Symbol.iterator]()
             : {
-                  next(): IteratorResult<never, never> {
-                      return { done: true, value: undefined! };
-                  },
-              };
+                next(): IteratorResult<never, never> {
+                    return { done: true, value: undefined! };
+                },
+            };
     }
 
     constructor(val: T) {
-        if (!(this instanceof SomeImpl)) {
-            return new SomeImpl(val);
-        }
-
         this.some = true;
         this.none = false;
         this.val = val;
@@ -144,7 +140,7 @@ class SomeImpl<T> implements BaseOption<T> {
     }
 
     map<T2>(mapper: (val: T) => T2): Some<T2> {
-        return Some(mapper(this.val));
+        return new SomeImpl(mapper(this.val));
     }
 
     andThen<T2>(mapper: (val: T) => Option<T2>): Option<T2> {
@@ -152,7 +148,7 @@ class SomeImpl<T> implements BaseOption<T> {
     }
 
     toResult<E>(error: E): Ok<T> {
-        return Ok(this.val);
+        return new Ok(this.val);
     }
 
     /**
@@ -173,9 +169,7 @@ class SomeImpl<T> implements BaseOption<T> {
     }
 }
 
-// This allows Some to be callable - possible because of the es5 compilation target
-export const Some = SomeImpl as typeof SomeImpl & (<T>(val: T) => SomeImpl<T>);
-export type Some<T> = SomeImpl<T>;
+export class Some<T> extends SomeImpl<T> { }
 
 export type Option<T> = Some<T> | None;
 
@@ -186,6 +180,8 @@ export type OptionSomeTypes<T extends Option<any>[]> = {
 };
 
 export namespace Option {
+    export const Some = <T>(val: T) => new SomeImpl(val);
+
     /**
      * Parse a set of `Option`s, returning an array of all `Some` values.
      * Short circuits with the first `None` found, if any
@@ -222,6 +218,6 @@ export namespace Option {
     }
 
     export function isOption<T = any>(value: unknown): value is Option<T> {
-        return value instanceof Some || value === None;
+        return value instanceof SomeImpl || value === None;
     }
 }

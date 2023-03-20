@@ -1,4 +1,4 @@
-import { Err, Ok, Result } from '../src';
+import { Result } from '../src';
 import { Observable, of } from 'rxjs';
 import {
     elseMap,
@@ -16,8 +16,8 @@ import {
 } from '../src/rxjs-operators';
 import { eq } from './util';
 
-const goodVal: Observable<Result<string, number>> = of(Ok('good'));
-const badVal: Observable<Result<string, number>> = of(Err(0));
+const goodVal: Observable<Result<string, number>> = of(Result.Ok('good'));
+const badVal: Observable<Result<string, number>> = of(Result.Err(0));
 
 test('resultMap', () => {
     const goodValMapped = goodVal.pipe(
@@ -28,7 +28,7 @@ test('resultMap', () => {
     );
     eq<typeof goodValMapped, Observable<Result<boolean, number>>>(true);
 
-    expect(goodValMapped).toMatchObsResult(Ok(true));
+    expect(goodValMapped).toMatchObsResult(Result.Ok(true));
 
     const badValMapped = badVal.pipe(
         resultMap((msg) => {
@@ -37,7 +37,7 @@ test('resultMap', () => {
         }),
     );
     eq<typeof badValMapped, Observable<Result<boolean, number>>>(true);
-    expect(badValMapped).toMatchObsResult(Err(0));
+    expect(badValMapped).toMatchObsResult(Result.Err(0));
 });
 
 test('resultMapErr', () => {
@@ -48,7 +48,7 @@ test('resultMapErr', () => {
         }),
     );
     eq<typeof goodValMappedErr, Observable<Result<string, Date>>>(true);
-    expect(goodValMappedErr).toMatchObsResult(Ok('good'));
+    expect(goodValMappedErr).toMatchObsResult(Result.Ok('good'));
 
     const badValMappedErr = badVal.pipe(
         resultMapErr((num) => {
@@ -57,27 +57,27 @@ test('resultMapErr', () => {
         }),
     );
     eq<typeof badValMappedErr, Observable<Result<string, Date>>>(true);
-    expect(badValMappedErr).toMatchObsResult(Err(new Date(0)));
+    expect(badValMappedErr).toMatchObsResult(Result.Err(new Date(0)));
 });
 
 test('resultMapTo', () => {
     const goodValMappedTo = goodVal.pipe(resultMapTo(500));
     eq<typeof goodValMappedTo, Observable<Result<number, number>>>(true);
-    expect(goodValMappedTo).toMatchObsResult(Ok(500));
+    expect(goodValMappedTo).toMatchObsResult(Result.Ok(500));
 
     const badValMappedTo = badVal.pipe(resultMapTo(500));
     eq<typeof badValMappedTo, Observable<Result<number, number>>>(true);
-    expect(badValMappedTo).toMatchObsResult(Err(0));
+    expect(badValMappedTo).toMatchObsResult(Result.Err(0));
 });
 
 test('resultMapErrTo', () => {
     const goodValMappedErrTo = goodVal.pipe(resultMapErrTo('err'));
     eq<typeof goodValMappedErrTo, Observable<Result<string, string>>>(true);
-    expect(goodValMappedErrTo).toMatchObsResult(Ok('good'));
+    expect(goodValMappedErrTo).toMatchObsResult(Result.Ok('good'));
 
     const badValMappedErrTo = badVal.pipe(resultMapErrTo('err'));
     eq<typeof badValMappedErrTo, Observable<Result<string, string>>>(true);
-    expect(badValMappedErrTo).toMatchObsResult(Err('err'));
+    expect(badValMappedErrTo).toMatchObsResult(Result.Err('err'));
 });
 
 test('elseMap', () => {
@@ -118,29 +118,29 @@ test('switchMap', async () => {
     const goodValSwitchMappedToResult = goodVal.pipe(
         resultSwitchMap((a) => {
             eq<typeof a, string>(true);
-            return of(Ok(new Date(3)) as Result<Date, string>);
+            return of(Result.Ok(new Date(3)) as Result<Date, string>);
         }),
     );
     eq<typeof goodValSwitchMappedToResult, Observable<Result<Date, number | string>>>(true);
-    expect(goodValSwitchMappedToResult).toMatchObsResult(Ok(new Date(3)));
+    expect(goodValSwitchMappedToResult).toMatchObsResult(Result.Ok(new Date(3)));
 
     const goodValSwitchMappedToBadResult = goodVal.pipe(
         resultSwitchMap((a) => {
             eq<typeof a, string>(true);
-            return of(Err(new Date(3)) as Result<number, Date>);
+            return of(Result.Err(new Date(3)) as Result<number, Date>);
         }),
     );
     eq<typeof goodValSwitchMappedToBadResult, Observable<Result<number, Date | number>>>(true);
-    expect(goodValSwitchMappedToBadResult).toMatchObsResult(Err(new Date(3)));
+    expect(goodValSwitchMappedToBadResult).toMatchObsResult(Result.Err(new Date(3)));
 
     const badValSwitchMappedToResult = badVal.pipe(
         resultSwitchMap((a) => {
             eq<typeof a, string>(true);
-            return of(Ok(new Date(3)) as Result<Date, string>);
+            return of(Result.Ok(new Date(3)) as Result<Date, string>);
         }),
     );
     eq<typeof badValSwitchMappedToResult, Observable<Result<Date, number | string>>>(true);
-    expect(badValSwitchMappedToResult).toMatchObsResult(Err(0));
+    expect(badValSwitchMappedToResult).toMatchObsResult(Result.Err(0));
 
     const goodValSwitchMappedToNonResult = goodVal.pipe(
         resultSwitchMap((a) => {
@@ -149,7 +149,7 @@ test('switchMap', async () => {
         }),
     );
     eq<typeof goodValSwitchMappedToNonResult, Observable<Result<Date, number>>>(true);
-    expect(goodValSwitchMappedToNonResult).toMatchObsResult(Ok(new Date(3)));
+    expect(goodValSwitchMappedToNonResult).toMatchObsResult(Result.Ok(new Date(3)));
 
     const badValSwitchMappedToNonResult = badVal.pipe(
         resultSwitchMap((a) => {
@@ -158,36 +158,36 @@ test('switchMap', async () => {
         }),
     );
     eq<typeof badValSwitchMappedToNonResult, Observable<Result<Date, number>>>(true);
-    expect(badValSwitchMappedToNonResult).toMatchObsResult(Err(0));
+    expect(badValSwitchMappedToNonResult).toMatchObsResult(Result.Err(0));
 });
 
 test('switchMap', async () => {
     const goodValMergeMappedToResult = goodVal.pipe(
         resultMergeMap((a) => {
             eq<typeof a, string>(true);
-            return of(Ok(new Date(3)) as Result<Date, string>);
+            return of(Result.Ok(new Date(3)) as Result<Date, string>);
         }),
     );
     eq<typeof goodValMergeMappedToResult, Observable<Result<Date, number | string>>>(true);
-    expect(goodValMergeMappedToResult).toMatchObsResult(Ok(new Date(3)));
+    expect(goodValMergeMappedToResult).toMatchObsResult(Result.Ok(new Date(3)));
 
     const goodValMergeMappedToBadResult = goodVal.pipe(
         resultMergeMap((a) => {
             eq<typeof a, string>(true);
-            return of(Err(new Date(3)) as Result<number, Date>);
+            return of(Result.Err(new Date(3)) as Result<number, Date>);
         }),
     );
     eq<typeof goodValMergeMappedToBadResult, Observable<Result<number, Date | number>>>(true);
-    expect(goodValMergeMappedToBadResult).toMatchObsResult(Err(new Date(3)));
+    expect(goodValMergeMappedToBadResult).toMatchObsResult(Result.Err(new Date(3)));
 
     const badValMergeMappedToResult = badVal.pipe(
         resultMergeMap((a) => {
             eq<typeof a, string>(true);
-            return of(Ok(new Date(3)) as Result<Date, string>);
+            return of(Result.Ok(new Date(3)) as Result<Date, string>);
         }),
     );
     eq<typeof badValMergeMappedToResult, Observable<Result<Date, number | string>>>(true);
-    expect(badValMergeMappedToResult).toMatchObsResult(Err(0));
+    expect(badValMergeMappedToResult).toMatchObsResult(Result.Err(0));
 
     const goodValMergeMappedToNonResult = goodVal.pipe(
         resultMergeMap((a) => {
@@ -196,7 +196,7 @@ test('switchMap', async () => {
         }),
     );
     eq<typeof goodValMergeMappedToNonResult, Observable<Result<Date, number>>>(true);
-    expect(goodValMergeMappedToNonResult).toMatchObsResult(Ok(new Date(3)));
+    expect(goodValMergeMappedToNonResult).toMatchObsResult(Result.Ok(new Date(3)));
 
     const badValMergeMappedToNonResult = badVal.pipe(
         resultMergeMap((a) => {
@@ -205,7 +205,7 @@ test('switchMap', async () => {
         }),
     );
     eq<typeof badValMergeMappedToNonResult, Observable<Result<Date, number>>>(true);
-    expect(badValMergeMappedToNonResult).toMatchObsResult(Err(0));
+    expect(badValMergeMappedToNonResult).toMatchObsResult(Result.Err(0));
 });
 
 test('filterResultOk', () => {
@@ -246,7 +246,7 @@ test('tapResultOk', () => {
     );
 
     eq<typeof tappedGoodVal, Observable<Result<string, number>>>(true);
-    expect(tappedGoodVal).toMatchObsResult(Ok('good'));
+    expect(tappedGoodVal).toMatchObsResult(Result.Ok('good'));
     expect(hitGoodVal).toEqual(true);
 
     let hitBadVal = false;
@@ -259,7 +259,7 @@ test('tapResultOk', () => {
     );
 
     eq<typeof tappedBadVal, Observable<Result<string, number>>>(true);
-    expect(tappedBadVal).toMatchObsResult(Err(0));
+    expect(tappedBadVal).toMatchObsResult(Result.Err(0));
     expect(hitBadVal).toEqual(false);
 });
 
@@ -274,7 +274,7 @@ test('tapResultErr', () => {
     );
 
     eq<typeof tappedGoodVal, Observable<Result<string, number>>>(true);
-    expect(tappedGoodVal).toMatchObsResult(Ok('good'));
+    expect(tappedGoodVal).toMatchObsResult(Result.Ok('good'));
     expect(hitGoodVal).toEqual(false);
 
     let hitBadVal = false;
@@ -288,6 +288,6 @@ test('tapResultErr', () => {
     );
 
     eq<typeof tappedBadVal, Observable<Result<string, number>>>(true);
-    expect(tappedBadVal).toMatchObsResult(Err(0));
+    expect(tappedBadVal).toMatchObsResult(Result.Err(0));
     expect(hitBadVal).toEqual(true);
 });

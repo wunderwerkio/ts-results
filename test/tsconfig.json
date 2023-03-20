@@ -5,9 +5,9 @@
     "sourceMap": true,
     "declaration": false,
     "declarationMap": false,
-    "module": "commonjs",
-    "downlevelIteration": true,
-    "importHelpers": true
+    //"module": "commonjs",
+    //"downlevelIteration": true,
+    //"importHelpers": true
   },
   "include": ["../src/**/*.ts", "./**/*.ts"],
   "exclude": []

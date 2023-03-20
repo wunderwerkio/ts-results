@@ -1,7 +1,7 @@
-import { Err, None, Ok, Option, OptionSomeType, Result, Some } from '../src';
+import { None, Option, OptionSomeType, Result, Some, SomeImpl } from '../src';
 import { eq } from './util';
 
-const someString = Some('foo');
+const someString = Option.Some('foo');
 const someNum = new Some(10);
 
 test('basic invariants', () => {
@@ -47,7 +47,7 @@ test('type narrowing', () => {
         eq<typeof opt, None>(true);
     }
 
-    expect(someString).toBeInstanceOf(Some);
+    expect(someString).toBeInstanceOf(SomeImpl);
     expect(None).toEqual(None);
 });
 
@@ -65,31 +65,31 @@ test('unwrap', () => {
 test('map / andThen', () => {
     expect(None.map(() => 1)).toBe(None);
     expect(None.andThen(() => 1)).toBe(None);
-    expect(None.andThen(() => Some(1))).toBe(None);
+    expect(None.andThen(() => Option.Some(1))).toBe(None);
 
-    expect(someString.map(() => 1)).toEqual(Some(1));
+    expect(someString.map(() => 1)).toEqual(Option.Some(1));
     // @ts-expect-error
     someString.andThen(() => 1);
-    expect(someString.andThen(() => Some(1))).toEqual(Some(1));
+    expect(someString.andThen(() => Option.Some(1))).toEqual(Option.Some(1));
 
-    const mapped = (someString as Option<string>).andThen((val) => Some(!!val));
-    expect(mapped).toEqual(Some(true));
+    const mapped = (someString as Option<string>).andThen((val) => Option.Some(!!val));
+    expect(mapped).toEqual(Option.Some(true));
     eq<typeof mapped, Option<boolean>>(true);
 });
 
 test('all / any', () => {
     const strings = ['foo', 'bar', 'baz'] as const;
-    const options = [Some('foo' as const), Some('bar' as const), Some('baz' as const)] as const;
+    const options = [Option.Some('foo' as const), Option.Some('bar' as const), Option.Some('baz' as const)] as const;
 
     const all = Option.all(...options);
     eq<typeof all, Option<['foo', 'bar', 'baz']>>(true);
 
-    expect(Option.all(...options)).toEqual(Some(strings));
-    expect(Option.all()).toEqual(Some([]));
+    expect(Option.all(...options)).toEqual(Option.Some(strings));
+    expect(Option.all()).toEqual(Option.Some([]));
     expect(Option.all(...options, None)).toEqual(None);
 
-    expect(Option.any(...options)).toEqual(Some('foo'));
-    expect(Option.any(...options, None)).toEqual(Some('foo'));
+    expect(Option.any(...options)).toEqual(Option.Some('foo'));
+    expect(Option.any(...options, None)).toEqual(Option.Some('foo'));
     expect(Option.any(None, None)).toEqual(None);
     expect(Option.any()).toEqual(None);
 });
@@ -101,21 +101,21 @@ test('Type Helpers', () => {
 });
 
 test('to string', () => {
-    expect(`${Some(1)}`).toEqual('Some(1)');
-    expect(`${Some({ name: 'George' })}`).toEqual('Some({"name":"George"})');
+    expect(`${Option.Some(1)}`).toEqual('Some(1)');
+    expect(`${Option.Some({ name: 'George' })}`).toEqual('Some({"name":"George"})');
     expect(`${None}`).toEqual('None');
 });
 
 test('to result', () => {
-    const option = Some(1) as Option<number>;
+    const option = Option.Some(1) as Option<number>;
     const result = option.toResult('error');
     eq<typeof result, Result<number, string>>(true);
 
-    expect(result).toMatchResult(Ok(1));
+    expect(result).toMatchResult(Result.Ok(1));
 
     const option2 = None as Option<number>;
     const result2 = option2.toResult('error');
     eq<typeof result2, Result<number, string>>(true);
 
-    expect(result2).toMatchResult(Err('error'));
+    expect(result2).toMatchResult(Result.Err('error'));
 });

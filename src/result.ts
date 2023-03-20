@@ -29,8 +29,8 @@ interface BaseResult<T, E> extends Iterable<T extends Iterable<infer U> ? U : ne
      * Returns the contained `Ok` value, if does not exist.  Throws an error if it does.
      * @param msg the message to throw if Ok value.
      */
-    expectErr(msg: string): T;
-    
+    expectErr(msg: string): E;
+
     /**
      * Returns the contained `Ok` value.
      * Because this function may throw, its use is generally discouraged.
@@ -39,14 +39,6 @@ interface BaseResult<T, E> extends Iterable<T extends Iterable<infer U> ? U : ne
      * Throws if the value is an `Err`, with a message provided by the `Err`'s value.
      */
     unwrap(): T;
-
-    /**
-     * Returns the contained `Ok` value or a provided default.
-     *
-     *  @see unwrapOr
-     *  @deprecated in favor of unwrapOr
-     */
-    else<T2>(val: T2): T | T2;
 
     /**
      * Returns the contained `Ok` value or a provided default.
@@ -110,28 +102,12 @@ export class ErrImpl<E> implements BaseResult<never, E> {
     }
 
     constructor(val: E) {
-        if (!(this instanceof ErrImpl)) {
-            return new ErrImpl(val);
-        }
-
         this.ok = false;
         this.err = true;
         this.val = val;
 
         const stackLines = new Error().stack!.split('\n').slice(2);
-        if (stackLines && stackLines.length > 0 && stackLines[0].includes('ErrImpl')) {
-            stackLines.shift();
-        }
-
         this._stack = stackLines.join('\n');
-    }
-
-    /**
-     * @deprecated in favor of unwrapOr
-     * @see unwrapOr
-     */
-    else<T2>(val: T2): T2 {
-        return val;
     }
 
     unwrapOr<T2>(val: T2): T2 {
@@ -143,7 +119,7 @@ export class ErrImpl<E> implements BaseResult<never, E> {
     }
 
     expectErr(_msg: string): E {
-        return this.val
+        return this.val;
     }
 
     unwrap(): never {
@@ -175,9 +151,7 @@ export class ErrImpl<E> implements BaseResult<never, E> {
     }
 }
 
-// This allows Err to be callable - possible because of the es5 compilation target
-export const Err = ErrImpl as typeof ErrImpl & (<E>(err: E) => Err<E>);
-export type Err<E> = ErrImpl<E>;
+export class Err<E> extends ErrImpl<E> { }
 
 /**
  * Contains the success value
@@ -198,28 +172,16 @@ export class OkImpl<T> implements BaseResult<T, never> {
         return Symbol.iterator in obj
             ? obj[Symbol.iterator]()
             : {
-                  next(): IteratorResult<never, never> {
-                      return { done: true, value: undefined! };
-                  },
-              };
+                next(): IteratorResult<never, never> {
+                    return { done: true, value: undefined! };
+                },
+            };
     }
 
     constructor(val: T) {
-        if (!(this instanceof OkImpl)) {
-            return new OkImpl(val);
-        }
-
         this.ok = true;
         this.err = false;
         this.val = val;
-    }
-
-    /**
-     * @see unwrapOr
-     * @deprecated in favor of unwrapOr
-     */
-    else(_val: unknown): T {
-        return this.val;
     }
 
     unwrapOr(_val: unknown): T {
@@ -254,7 +216,7 @@ export class OkImpl<T> implements BaseResult<T, never> {
     }
 
     toOption(): Option<T> {
-        return Some(this.val);
+        return Option.Some(this.val);
     }
 
     /**
@@ -275,9 +237,7 @@ export class OkImpl<T> implements BaseResult<T, never> {
     }
 }
 
-// This allows Ok to be callable - possible because of the es5 compilation target
-export const Ok = OkImpl as typeof OkImpl & (<T>(val: T) => Ok<T>);
-export type Ok<T> = OkImpl<T>;
+export class Ok<T> extends OkImpl<T> { }
 
 export type Result<T, E> = Ok<T> | Err<E>;
 
@@ -292,6 +252,9 @@ export type ResultErrTypes<T extends Result<any, any>[]> = {
 };
 
 export namespace Result {
+    export const Ok = <T>(val: T) => new OkImpl(val);
+    export const Err = <E>(val: E) => new ErrImpl(val);
+
     /**
      * Parse a set of `Result`s, returning an array of all `Ok` values.
      * Short circuits with the first `Err` found, if any
@@ -308,7 +271,7 @@ export namespace Result {
             }
         }
 
-        return new Ok(okResult as ResultOkTypes<T>);
+        return new OkImpl(okResult as ResultOkTypes<T>);
     }
 
     /**
@@ -330,7 +293,7 @@ export namespace Result {
         }
 
         // it must be a Err
-        return new Err(errResult as ResultErrTypes<T>);
+        return new ErrImpl(errResult as ResultErrTypes<T>);
     }
 
     /**
@@ -339,9 +302,9 @@ export namespace Result {
      */
     export function wrap<T, E = unknown>(op: () => T): Result<T, E> {
         try {
-            return new Ok(op());
+            return new OkImpl(op());
         } catch (e) {
-            return new Err<E>(e as E);
+            return new ErrImpl<E>(e as E);
         }
     }
 
@@ -352,14 +315,14 @@ export namespace Result {
     export function wrapAsync<T, E = unknown>(op: () => Promise<T>): Promise<Result<T, E>> {
         try {
             return op()
-                .then((val) => new Ok(val))
-                .catch((e) => new Err(e));
+                .then((val) => new OkImpl(val))
+                .catch((e) => new ErrImpl(e));
         } catch (e) {
-            return Promise.resolve(new Err(e as E));
+            return Promise.resolve(new ErrImpl(e as E));
         }
     }
 
     export function isResult<T = any, E = any>(val: unknown): val is Result<T, E> {
-        return val instanceof Err || val instanceof Ok;
+        return val instanceof ErrImpl || val instanceof OkImpl;
     }
 }
