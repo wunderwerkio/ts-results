@@ -92,7 +92,7 @@ export class ErrImpl<E> implements BaseResult<never, E> {
   readonly err!: true;
   readonly val!: E;
 
-  private readonly _stack!: string;
+  readonly _stack!: string;
 
   [Symbol.iterator](): Iterator<never, never, any> {
     return {
