@@ -50,8 +50,9 @@ jobs:
         uses: changesets/action@v1
         with:
           commit: 'release: version packages'
-          version: pnpm version-packages
-          publish: pnpm publish-packages
+          version: pnpm version-package
+          publish: pnpm publish-package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}

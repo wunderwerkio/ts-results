@@ -1,0 +1,17 @@
+{
+  "$schema": "https://turborepo.org/schema.json",
+  "pipeline": {
+    "core:build": {
+      "outputs": ["dist/**"],
+      "inputs": ["src/**/*.ts"]
+    },
+    "core:typecheck": {
+      "inputs": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "core:test": {
+      "outputs": [],
+      "inputs": ["src/**/*.ts", "test/**/*.ts"]
+    }
+  },
+  "globalEnv": ["NODE_ENV"]
+}

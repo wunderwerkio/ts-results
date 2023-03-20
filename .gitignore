@@ -9,3 +9,7 @@ node_modules/
 
 # test coverage
 coverage
+
+# Turborepo
+.turbo/*
+!.turbo/config.json
